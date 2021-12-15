@@ -24,7 +24,10 @@ import torch.backends.cudnn as cudnn
 import numpy as np
 from PIL import Image
 import io
+
+from scripts import storage_handlers,reports
 ####### LOAD TF MODEL
+
 
 import tensorflow as tf
 model_tf = tf.keras.models.load_model("mask_detector\mask_detector.model")
@@ -166,7 +169,7 @@ def detect(path):
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                 for i_l,(*xyxy, conf, cls) in enumerate(reversed(det)):
-                    if round(conf.item(),2)>0.8:  # check confidence image
+                    if round(conf.item(),2)>0.6:  # check confidence image
                         c = int(cls)  # integer class
                         label2 = None if hide_labels else (names[c] if hide_conf else 'id: ')
                         label = 'id: '
@@ -175,7 +178,7 @@ def detect(path):
                         prediction = predict_mask_acc(im0,xyxy)
                         #print(prediction)
                         temp_dict_ret  = dict()
-                        temp_dict_ret['id'] = i_l
+                        temp_dict_ret['id_person'] = i_l
 
                             #cut head
                         x1, y1, x2, y2 = xyxy
@@ -196,8 +199,11 @@ def detect(path):
             if save_vid:
                 if dataset.mode == 'image':
                     cv2.imwrite(save_path, im0)
+                    files_cloud = storage_handlers.upload_photos(reports.get_id())
                     print("file saved")
-    return ret_response
+                
+    return (ret_response,files_cloud)
+
 
 #ASD
 if __name__ == "__main__":
@@ -208,10 +214,12 @@ if __name__ == "__main__":
 
 def get_predictions_img(img_byte):
     path = 'test.jpg'
+    #preprocess
     image = Image.open(io.BytesIO(img_byte))
     image.save(path)
-    (answer,im0) = detect(path)
-    return (answer,im0)
+    #detect with yolov5 and mask model
+    answer,files_cloud = detect(path)
+    return (answer,files_cloud)
 
 
     

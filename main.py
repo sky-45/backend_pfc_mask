@@ -4,10 +4,12 @@ from fastapi import Depends, FastAPI, HTTPException, status, File, UploadFile
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse,Response
 
 # Importando scripts
 from scripts import reports
 import model
+from datetime import datetime
 
 fake_users_db = {
     "johndoe": {
@@ -118,6 +120,12 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
 
     return current_user
 
+########################### fetch and modify data
+
+@app.get("/data")
+async def get_all_data():
+    data = reports.get_logs()
+    return data
 
 @app.get("/data/{date}")
 async def get_data_since(date:str,current_user: User= Depends(get_current_active_user)):
@@ -125,21 +133,17 @@ async def get_data_since(date:str,current_user: User= Depends(get_current_active
     data = reports.get_reports(date.replace("-","/"))
     return data
 
-@app.post("/data")
-async def get_data_since(report: NewReport, current_user: User= Depends(get_current_active_user)):
-    #reemplazamos la fecha dd-mm-yyyy a dd/mm/yyyy, ej: 16-09-2019 a 16/09/2019
-    
-    #data = reports.get_reports(date.replace("-","/"))
-    return reports.add_reports(report)
 
-@app.post("/uploadimage/")
-async def create_upload_file(file: UploadFile = File(...)):
-    contents = await file.read()  # <-- Important!
-    responsexd = model.get_shape_img(contents)
-    return {"filename": file.filename, "response":responsexd}
-
+########################### upload data
 @app.post("/upload_ret_image/")
 async def create_up_ret_file(file: UploadFile = File(...)):
     contents = await file.read()  # <-- Important!
-    responsexd = model.get_predictions_img(contents)
-    return {"filename": file.filename, "response":responsexd, "out_img":""}
+    responsexd,files_cloud = model.get_predictions_img(contents)
+    data_log =  {"id_log":reports.get_id(),
+                "date_log":datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+                "url_org_img":files_cloud[0],
+                "url_pred_img":files_cloud[1],
+                "detections_data":responsexd
+                }
+    reports.add_reports(data_log)
+    return {"status":"succesfull"}
