@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'backend-pfc-mask'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_95A3A9A2EFD142FA8FBFE9B1DB5D1264 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_27E75270145C4FE8B0DF7663DBFF9013 }}
